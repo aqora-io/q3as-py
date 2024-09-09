@@ -57,11 +57,13 @@ class EncodedObservables(BaseModel):
     @classmethod
     def from_qiskit(cls, obs: ObservablesArrayLike) -> EncodedObservables:
         return EncodedObservables(
-            data=json.loads(json.dumps(ObservablesArray.coerce(obs).tolist()))
+            data=json.dumps(
+                ObservablesArray.coerce(obs).tolist(), separators=(",", ":")
+            )
         )
 
     def to_qiskit(self) -> ObservablesArray:
-        return ObservablesArray(self.data)
+        return ObservablesArray(json.loads(self.data))
 
 
 class EncodedArray(BaseModel):
@@ -80,8 +82,8 @@ class EncodedArray(BaseModel):
 
 
 class Binding(Enum):
-    Bound = "bound"
     Unbound = "unbound"
+    Bound = "bound"
 
 
 class EncodedParameters(BaseModel):

@@ -150,7 +150,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.9.1" },
-    { name = "qiskit", specifier = ">=1.2.0" },
+    { name = "qiskit", specifier = ">=1.0.0" },
 ]
 
 [[package]]
