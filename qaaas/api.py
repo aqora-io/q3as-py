@@ -8,7 +8,7 @@ from collections.abc import Mapping
 
 import numpy as np
 from numpy.typing import ArrayLike
-from pydantic import BaseModel, Json
+from pydantic import BaseModel
 from qiskit.circuit import QuantumCircuit
 from qiskit.primitives.containers.observables_array import (
     ObservablesArray,
@@ -52,7 +52,7 @@ class EncodedQuantumCircuit(BaseModel):
 
 class EncodedObservables(BaseModel):
     encoding: Literal["JSON"] = "JSON"
-    data: Json
+    data: str
 
     @classmethod
     def from_qiskit(cls, obs: ObservablesArrayLike) -> EncodedObservables:

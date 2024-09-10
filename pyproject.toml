@@ -4,10 +4,20 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.9.1", "qiskit>=1.0.0"]
+dependencies = [
+    "aiohttp>=3.10.5",
+    "pydantic>=2.9.1",
+    "qiskit>=1.0.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["qaaas"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest-asyncio>=0.24.0",
+    "pytest>=8.3.2",
+]
 
 [build-system]
 requires = ["hatchling"]
