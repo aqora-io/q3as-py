@@ -127,7 +127,7 @@ class VQE(BaseModel):
     method: Literal["VQE"] = "VQE"
     ansatz: EncodedQuantumCircuit
     observables: EncodedObservables
-    initial_parameters: Optional[EncodedParameters] = None
+    initial_params: Optional[EncodedArray] = None
     optimizer: Union[COBYLA, SLSQP] = COBYLA()
     estimator: EstimatorOptions = EstimatorOptions()
 
@@ -139,7 +139,7 @@ class VQE(BaseModel):
 class VQEBuilder:
     _ansatz: Optional[QuantumCircuit] = None
     _observables: Optional[ObservablesArrayLike] = None
-    _initial_parameters: Optional[Union[BindingsArrayLike, ArrayLike]] = None
+    _initial_params: Optional[ArrayLike] = None
     _optimizer: Union[COBYLA, SLSQP] = COBYLA()
     _estimator: EstimatorOptions = EstimatorOptions()
 
@@ -151,10 +151,8 @@ class VQEBuilder:
         self._observables = obs
         return self
 
-    def initial_parameters(
-        self, params: Union[BindingsArrayLike, ArrayLike]
-    ) -> "VQEBuilder":
-        self._initial_parameters = params
+    def initial_params(self, params: ArrayLike) -> "VQEBuilder":
+        self._initial_params = params
         return self
 
     def optimizer(self, opt: Union[COBYLA, SLSQP]) -> VQEBuilder:
@@ -173,9 +171,9 @@ class VQEBuilder:
         return VQE(
             ansatz=EncodedQuantumCircuit.from_qiskit(self._ansatz),
             observables=EncodedObservables.from_qiskit(self._observables),
-            initial_parameters=(
-                EncodedParameters.from_qiskit(self._initial_parameters)
-                if self._initial_parameters is not None
+            initial_params=(
+                EncodedArray.from_numpy(self._initial_params)
+                if self._initial_params is not None
                 else None
             ),
             optimizer=self._optimizer,

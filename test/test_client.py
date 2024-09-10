@@ -13,11 +13,7 @@ async def test_client():
     ansatz = ansatz = EfficientSU2(hamiltonian.num_qubits)
     x0 = 2 * np.pi * np.random.random(ansatz.num_parameters)
     vqe = (
-        VQE.builder()
-        .ansatz(ansatz)
-        .observables(hamiltonian)
-        .initial_parameters(x0)
-        .build()
+        VQE.builder().ansatz(ansatz).observables(hamiltonian).initial_params(x0).build()
     )
     async with Client(
         Credentials.load(open(".credentials.json")), url="http://localhost:8000"
