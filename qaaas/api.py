@@ -127,7 +127,7 @@ class VQE(BaseModel):
     method: Literal["VQE"] = "VQE"
     ansatz: EncodedQuantumCircuit
     observables: EncodedObservables
-    initial_params: Optional[EncodedArray] = None
+    initial_params: EncodedArray
     optimizer: Union[COBYLA, SLSQP] = COBYLA()
     estimator: EstimatorOptions = EstimatorOptions()
 
@@ -168,14 +168,15 @@ class VQEBuilder:
             raise ValueError("Ansatz is required")
         if self._observables is None:
             raise ValueError("Observables are required")
+        if self._initial_params is not None:
+            if len(self._initial_params) != self._ansatz.num_parameters:
+                raise ValueError("Initial parameters must match ansatz")
+        else:
+            self._initial_params = np.zeros(self._ansatz.num_parameters)
         return VQE(
             ansatz=EncodedQuantumCircuit.from_qiskit(self._ansatz),
             observables=EncodedObservables.from_qiskit(self._observables),
-            initial_params=(
-                EncodedArray.from_numpy(self._initial_params)
-                if self._initial_params is not None
-                else None
-            ),
+            initial_params=EncodedArray.from_numpy(self._initial_params),
             optimizer=self._optimizer,
             estimator=self._estimator,
         )
