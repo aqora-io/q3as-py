@@ -1,5 +1,5 @@
-from qaaas.client import Client, Credentials
-from qaaas.api import VQE
+from q3as.client import Client, Credentials
+from q3as.api import VQE
 
 import numpy as np
 from qiskit.circuit.library import EfficientSU2

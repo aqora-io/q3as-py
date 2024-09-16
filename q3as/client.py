@@ -3,7 +3,7 @@ import json
 from io import IOBase
 from aiohttp import ClientSession, BasicAuth, ClientResponse, ClientResponseError
 
-from qaaas.api import VQE
+from q3as.api import VQE
 
 
 class Credentials:
