@@ -16,7 +16,7 @@ async def test_client_with_init_params():
         VQE.builder().ansatz(ansatz).observables(hamiltonian).initial_params(x0).build()
     )
     async with Client(
-        Credentials.load(open(".credentials.json")), url="http://localhost:8000"
+        Credentials.load(open(".credentials.json")), url="http://localhost:8080"
     ) as client:
         response = await client.create_job(vqe)
         print(response)
@@ -29,7 +29,7 @@ async def test_client_no_init_params():
     ansatz = ansatz = EfficientSU2(hamiltonian.num_qubits)
     vqe = VQE.builder().ansatz(ansatz).observables(hamiltonian).build()
     async with Client(
-        Credentials.load(open(".credentials.json")), url="http://localhost:8000"
+        Credentials.load(open(".credentials.json")), url="http://localhost:8080"
     ) as client:
         response = await client.create_job(vqe)
         print(response)
