@@ -1,9 +1,11 @@
-from typing import Any
+from typing import Type, TypeVar
 import json
 from io import IOBase
-from aiohttp import ClientSession, BasicAuth, ClientResponse, ClientResponseError
+from pydantic import BaseModel
 
-from q3as.api import VQE
+from httpx import BasicAuth, URL, Headers, Request, Client as BaseClient, Response
+
+from q3as.api import ApiClient, JobRequest, JobInfo
 
 
 class Credentials:
@@ -15,56 +17,88 @@ class Credentials:
         self.secret = secret
 
     @classmethod
-    def load(cls, file: IOBase):
+    def load(cls, file: str | IOBase):
+        if isinstance(file, str):
+            file = open(file)
         return cls(**json.load(file))
 
     def auth(self):
         return BasicAuth(self.id, self.secret)
 
 
-class APIError(Exception):
-    response: ClientResponseError
-    reason: str
+class RequestBuilder:
+    url: URL
 
-    def __init__(self, response: ClientResponseError, body: dict[str, Any]):
-        self.response = response
-        self.reason = body.get("detail", "Unknown")
+    def __init__(self, url: str):
+        self.url = URL(url)
 
-    def __str__(self):
-        return f"[{self.response.status} {self.response.message}]: {json.dumps(self.reason, indent=2)}"
-
-
-class Client:
-    session: ClientSession
-
-    def __init__(
-        self, credentials: Credentials, *, url: str = "https://qaaas.aqora.io"
-    ):
-        self.session = ClientSession(
-            url,
-            auth=credentials.auth(),
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+    def build_request(
+        self, method: str, path: str, headers: dict[str, str] = {}, **kwargs
+    ) -> Request:
+        return Request(
+            method,
+            self.url.copy_with(path=path),
+            headers=Headers(
+                {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    **headers,
+                }
+            ),
+            **kwargs,
         )
 
-    async def close(self):
-        await self.session.close()
+    def create_job(self, job: JobRequest) -> Request:
+        return self.build_request(
+            "POST", "/api/v1/jobs/", content=job.model_dump_json()
+        )
 
-    async def __aenter__(self):
+
+class APIError(Exception):
+    def __init__(self, message: str, response: Response):
+        super().__init__(message)
+        self.response = response
+
+
+T = TypeVar("T")
+
+
+class ResponseBuilder:
+    def check(self, response: Response):
+        if response.is_success:
+            return
+        try:
+            message = response.json()["details"]
+        except Exception:
+            message = response.text
+        raise APIError(message, response)
+
+    def parse[T: BaseModel](self, model: Type[T], response: Response) -> T:
+        self.check(response)
+        return model.model_validate(response.json())
+
+
+JobInput = TypeVar("JobInput")
+
+
+class Client(ApiClient):
+    client: BaseClient
+    req: RequestBuilder
+    res: ResponseBuilder
+
+    def __init__(self, credentials: Credentials, *, url: str = "https://q3as.aqora.io"):
+        self.req = RequestBuilder(url)
+        self.res = ResponseBuilder()
+        self.client = BaseClient(auth=credentials.auth())
+
+    def close(self):
+        self.client.close()
+
+    def __enter__(self):
         return self
 
-    async def __aexit__(self, *_):
-        await self.close()
+    def __exit__(self, *_):
+        self.close()
 
-    async def _process_response(self, response: ClientResponse):
-        json = await response.json()
-        try:
-            response.raise_for_status()
-        except ClientResponseError as e:
-            raise APIError(e, json)
-        return await response.json()
-
-    async def create_job(self, job: VQE):
-        async with self.session.post(
-            "/api/v1/jobs/", data=job.model_dump_json()
-        ) as response:
-            return await self._process_response(response)
+    def create_job(self, job: JobRequest) -> JobInfo:
+        return self.res.parse(JobInfo, self.client.send(self.req.create_job(job)))
