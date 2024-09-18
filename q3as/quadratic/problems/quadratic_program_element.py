@@ -16,16 +16,13 @@
 # to resolve the circular import issue of sphinx.
 # See https://github.com/agronholm/sphinx-autodoc-typehints#dealing-with-circular-imports
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .quadratic_program import QuadraticProgram
+from q3as.quadratic import problems  # pylint: disable=unused-import, cyclic-import
 
 
 class QuadraticProgramElement:
     """Interface class for all objects that have a parent QuadraticProgram."""
 
-    def __init__(self, quadratic_program: QuadraticProgram) -> None:
+    def __init__(self, quadratic_program: "problems.QuadraticProgram") -> None:
         """Initialize object with parent QuadraticProgram.
 
         Args:
@@ -42,7 +39,7 @@ class QuadraticProgramElement:
         self._quadratic_program = quadratic_program
 
     @property
-    def quadratic_program(self) -> QuadraticProgram:
+    def quadratic_program(self) -> "problems.QuadraticProgram":
         """Returns the parent QuadraticProgram.
 
         Returns:
@@ -51,7 +48,7 @@ class QuadraticProgramElement:
         return self._quadratic_program
 
     @quadratic_program.setter
-    def quadratic_program(self, quadratic_program: QuadraticProgram) -> None:
+    def quadratic_program(self, quadratic_program: "problems.QuadraticProgram") -> None:
         """Sets the parent QuadraticProgram.
 
         Args:

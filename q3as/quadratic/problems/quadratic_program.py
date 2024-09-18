@@ -14,7 +14,6 @@
 
 import logging
 from collections.abc import Sequence
-from enum import Enum
 from math import isclose
 from typing import Dict, List, Optional, Tuple, Union, cast
 from warnings import warn
@@ -32,16 +31,10 @@ from .linear_constraint import LinearConstraint
 from .quadratic_constraint import QuadraticConstraint
 from .quadratic_objective import QuadraticObjective
 from .quadratic_program_element import QuadraticProgramElement
-from .variable import Variable, VarType
+from .variable import Variable
+from .types import QuadraticProgramStatus, VarType
 
 logger = logging.getLogger(__name__)
-
-
-class QuadraticProgramStatus(Enum):
-    """Status of QuadraticProgram"""
-
-    VALID = 0
-    INFEASIBLE = 1
 
 
 class QuadraticProgram:

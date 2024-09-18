@@ -12,7 +12,6 @@
 
 """Quadratic Objective."""
 
-from enum import Enum
 from typing import Union, List, Dict, Tuple, Any, Optional
 
 from numpy import ndarray
@@ -22,13 +21,7 @@ from ..exceptions import QiskitOptimizationError
 from .linear_constraint import LinearExpression
 from .quadratic_expression import QuadraticExpression
 from .quadratic_program_element import QuadraticProgramElement
-
-
-class ObjSense(Enum):
-    """Objective Sense Type."""
-
-    MINIMIZE = 1
-    MAXIMIZE = -1
+from .types import ObjSense
 
 
 class QuadraticObjective(QuadraticProgramElement):

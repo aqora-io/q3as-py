@@ -12,20 +12,12 @@
 
 """Variable interface"""
 
-from enum import Enum
 from typing import Tuple, Union, Any
 
 from .quadratic_program_element import QuadraticProgramElement
 from ..exceptions import QiskitOptimizationError
 from ..infinity import INFINITY
-
-
-class VarType(Enum):
-    """Constants defining variable type."""
-
-    CONTINUOUS = 0
-    BINARY = 1
-    INTEGER = 2
+from .types import VarType
 
 
 class Variable(QuadraticProgramElement):

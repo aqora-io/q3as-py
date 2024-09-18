@@ -48,7 +48,8 @@ from .quadratic_expression import QuadraticExpression
 from .quadratic_objective import QuadraticObjective
 from .quadratic_program import QuadraticProgram
 from .quadratic_program_element import QuadraticProgramElement
-from .variable import Variable, VarType
+from .variable import Variable
+from .types import VarType
 
 __all__ = [
     "Constraint",
