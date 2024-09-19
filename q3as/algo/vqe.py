@@ -1,7 +1,7 @@
 from __future__ import annotations
-from collections.abc import Callable
-from typing import cast, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, Optional, Union, Callable
 from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -17,6 +17,12 @@ from qiskit.primitives.containers.observables_array import (
 from qiskit.primitives.containers.bindings_array import BindingsArray
 from qiskit.primitives.containers.estimator_pub import EstimatorPub
 from qiskit.primitives.containers.pub_result import PubResult
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.circuit.library import (
+    QAOAAnsatz,
+    TwoLocal as TwoLocalAnsatz,
+    EfficientSU2 as EfficientSU2Ansatz,
+)
 
 from q3as.optimizer import Optimizer, COBYLA
 from q3as.estimator import EstimatorOptions
@@ -29,6 +35,7 @@ if TYPE_CHECKING:
 
 class _EvaluationData:
     evs: float
+    stds: float
 
 
 @dataclass
@@ -37,11 +44,19 @@ class VQEIteration:
     cost: float
     params: np.ndarray
     result: PrimitiveResult[PubResult]
+    best: bool = False
+
+
+class HaltReason(Enum):
+    TOLERANCE = "tolerance"
+    INTERRUPT = "interrupt"
+    MAXITER = "maxiter"
 
 
 @dataclass
 class VQEResult:
     iter: int = 0
+    reason: HaltReason = HaltReason.INTERRUPT
     best: Optional[VQEIteration] = None
 
 
@@ -68,9 +83,6 @@ class VQE:
             params: np.ndarray,
         ):
             out.iter += 1
-            if self.maxiter is not None:
-                if out.iter >= self.maxiter:
-                    raise StopIteration
             bound_params = BindingsArray.coerce({tuple(self.ansatz.parameters): params})
             pub = EstimatorPub(self.ansatz, self.observables, bound_params)
             result = estimator.run([pub]).result()
@@ -79,19 +91,29 @@ class VQE:
                 iter=out.iter, cost=cost, params=params, result=result
             )
             if out.best is None or cost < out.best.cost:
+                vqe_result.best = True
                 out.best = vqe_result
             if callback is not None:
                 callback(vqe_result)
             return cost
 
+        options = {}
+        if self.maxiter is not None:
+            options["maxiter"] = self.maxiter
+
         try:
-            minimize(
+            res = minimize(
                 cost_fun,
                 self.initial_params,
                 method=self.optimizer.scipy_method,
+                options=options,
             )
+            if res.success:
+                out.reason = HaltReason.TOLERANCE
+            else:
+                out.reason = HaltReason.MAXITER
         except StopIteration:
-            pass
+            out.reason = HaltReason.INTERRUPT
 
         return out
 
@@ -105,14 +127,57 @@ class VQE:
         )
 
 
+def _observables_to_pauli(observables: ObservablesArray) -> SparsePauliOp:
+    return SparsePauliOp.from_list(observables.ravel().tolist()[0].items())
+
+
+type _PostProcessCallable = Optional[Callable[[QuantumCircuit], QuantumCircuit]]
+
+
+def _postprocessed(
+    postprocess: _PostProcessCallable, ansatz: QuantumCircuit
+) -> QuantumCircuit:
+    if postprocess is not None:
+        return postprocess(ansatz)
+    return ansatz
+
+
+def QAOA(
+    postprocess: _PostProcessCallable = None, **kwargs
+) -> Callable[[ObservablesArray], QuantumCircuit]:
+    return lambda obs: _postprocessed(
+        postprocess, QAOAAnsatz(_observables_to_pauli(obs), **kwargs)
+    )
+
+
+def TwoLocal(
+    postprocess: _PostProcessCallable = None, **kwargs
+) -> Callable[[ObservablesArray], QuantumCircuit]:
+    return lambda obs: _postprocessed(
+        postprocess, TwoLocalAnsatz(_observables_to_pauli(obs).num_qubits, **kwargs)
+    )
+
+
+def EfficientSU2(
+    postprocess: _PostProcessCallable = None, **kwargs
+) -> Callable[[ObservablesArray], QuantumCircuit]:
+    return lambda obs: _postprocessed(
+        postprocess, EfficientSU2Ansatz(_observables_to_pauli(obs).num_qubits, **kwargs)
+    )
+
+
 class VQEBuilder:
-    _ansatz: Optional[QuantumCircuit] = None
+    _ansatz: Optional[
+        Union[QuantumCircuit, Callable[[ObservablesArray], QuantumCircuit]]
+    ] = None
     _observables: Optional[ObservablesArrayLike] = None
     _initial_params: Optional[ArrayLike] = None
     _optimizer: Optimizer = COBYLA()
     _maxiter: Optional[int] = None
 
-    def ansatz(self, qc: QuantumCircuit) -> VQEBuilder:
+    def ansatz(
+        self, qc: Union[QuantumCircuit, Callable[[ObservablesArray], QuantumCircuit]]
+    ) -> VQEBuilder:
         self._ansatz = qc
         return self
 
@@ -133,19 +198,27 @@ class VQEBuilder:
         return self
 
     def build(self) -> VQE:
-        if self._ansatz is None:
-            raise ValueError("Ansatz is required")
         if self._observables is None:
             raise ValueError("Observables are required")
+        observables = ObservablesArray.coerce(self._observables)
+
+        if self._ansatz is None:
+            raise ValueError("Ansatz is required")
+        if isinstance(self._ansatz, QuantumCircuit):
+            ansatz = self._ansatz
+        else:
+            ansatz = self._ansatz(observables)
+
         if self._initial_params is not None:
             _initial_params = np.array(self._initial_params)
-            if len(_initial_params) != self._ansatz.num_parameters:
+            if len(_initial_params) != ansatz.num_parameters:
                 raise ValueError("Initial parameters must match ansatz")
         else:
-            _initial_params = np.zeros(self._ansatz.num_parameters)
+            _initial_params = np.zeros(ansatz.num_parameters)
+
         return VQE(
-            ansatz=self._ansatz,
-            observables=ObservablesArray.coerce(self._observables),
+            ansatz=ansatz,
+            observables=observables,
             initial_params=_initial_params,
             optimizer=self._optimizer,
             maxiter=self._maxiter,
