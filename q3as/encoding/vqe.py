@@ -8,11 +8,13 @@ import q3as.algo.vqe
 from q3as.encoding.numpy import EncodedArray
 from q3as.encoding.qiskit import (
     EncodedEstimatorResult,
+    EncodedSamplerResult,
     EncodedObservables,
     EncodedQuantumCircuit,
 )
 
 from .optimizer import EncodedOptimizer
+from q3as.algo.types import HaltReason
 
 if TYPE_CHECKING:
     from q3as.algo.vqe import VQE, VQEResult, VQEIteration
@@ -22,7 +24,8 @@ class EncodedVQEIteration(BaseModel):
     iter: int
     cost: float
     params: EncodedArray
-    result: EncodedEstimatorResult
+    estimated: EncodedEstimatorResult
+    best: bool
 
     @classmethod
     def encode(cls, result: VQEIteration) -> EncodedVQEIteration:
@@ -30,7 +33,8 @@ class EncodedVQEIteration(BaseModel):
             iter=result.iter,
             cost=result.cost,
             params=EncodedArray.encode(result.params),
-            result=EncodedEstimatorResult.encode(result.result),
+            estimated=EncodedEstimatorResult.encode(result.estimated),
+            best=result.best,
         )
 
     def decode(self) -> VQEIteration:
@@ -38,27 +42,42 @@ class EncodedVQEIteration(BaseModel):
             iter=self.iter,
             cost=self.cost,
             params=self.params.decode(),
-            result=self.result.decode(),
+            estimated=self.estimated.decode(),
+            best=self.best,
         )
 
 
 class EncodedVQEResult(BaseModel):
+    params: EncodedArray
     iter: int
-    best: Optional[EncodedVQEIteration]
+    reason: HaltReason
+    cost: Optional[float]
+    estimated: Optional[EncodedEstimatorResult]
+    sampled: Optional[EncodedSamplerResult]
 
     @classmethod
     def encode(cls, result: VQEResult) -> EncodedVQEResult:
         return cls(
+            params=EncodedArray.encode(result.params),
             iter=result.iter,
-            best=None
-            if result.best is None
-            else EncodedVQEIteration.encode(result.best),
+            reason=result.reason,
+            cost=result.cost,
+            estimated=None
+            if result.estimated is None
+            else EncodedEstimatorResult.encode(result.estimated),
+            sampled=None
+            if result.sampled is None
+            else EncodedSamplerResult.encode(result.sampled),
         )
 
     def decode(self):
         return q3as.algo.vqe.VQEResult(
             iter=self.iter,
-            best=None if self.best is None else self.best.decode(),
+            cost=self.cost,
+            params=self.params.decode(),
+            reason=self.reason,
+            estimated=None if self.estimated is None else self.estimated.decode(),
+            sampled=None if self.sampled is None else self.sampled.decode(),
         )
 
 

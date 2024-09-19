@@ -2,7 +2,7 @@ from q3as.algo.vqe import VQE, HaltReason, VQEIteration, QAOA
 
 import numpy as np
 from qiskit_aer import AerSimulator
-from qiskit_aer.primitives import EstimatorV2 as Estimator
+from qiskit_aer.primitives import EstimatorV2 as Estimator, SamplerV2 as Sampler
 from qiskit import transpile
 from qiskit.circuit.library import EfficientSU2
 from qiskit.quantum_info import SparsePauliOp
@@ -90,3 +90,17 @@ def test_vqe_with_callable_ansatz():
         .run(Estimator())
     )
     assert res.reason == HaltReason.TOLERANCE
+
+
+def test_vqe_with_sampler():
+    hamiltonian = SparsePauliOp.from_list(
+        [("YZ", 0.3980), ("ZI", -0.3980), ("ZZ", -0.0113), ("XX", 0.1810)]
+    )
+    res = (
+        VQE.builder()
+        .ansatz(QAOA(lambda qc: transpile(qc, simulator)))
+        .observables(hamiltonian)
+        .run(Estimator(), Sampler())
+    )
+    assert res.reason == HaltReason.TOLERANCE
+    print(res.sampled[0].data)

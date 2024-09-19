@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, cast, Optional, Union, Callable
 from dataclasses import dataclass
-from enum import Enum
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -9,13 +8,18 @@ from numpy.typing import ArrayLike
 from scipy.optimize import minimize
 
 from qiskit.circuit import QuantumCircuit
-from qiskit.primitives import BaseEstimatorV2 as Estimator, PrimitiveResult
+from qiskit.primitives import (
+    BaseEstimatorV2 as Estimator,
+    BaseSamplerV2 as Sampler,
+    PrimitiveResult,
+)
 from qiskit.primitives.containers.observables_array import (
     ObservablesArray,
     ObservablesArrayLike,
 )
-from qiskit.primitives.containers.bindings_array import BindingsArray
+from qiskit.primitives.containers.bindings_array import BindingsArray, BindingsArrayLike
 from qiskit.primitives.containers.estimator_pub import EstimatorPub
+from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.containers.pub_result import PubResult
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit.library import (
@@ -25,17 +29,14 @@ from qiskit.circuit.library import (
 )
 
 from q3as.optimizer import Optimizer, COBYLA
-from q3as.estimator import EstimatorOptions
+from q3as.run_options import RunOptions
 import q3as.encoding
 import q3as.api
 
+from .types import HaltReason, EstimatorData
+
 if TYPE_CHECKING:
     from q3as.api import ApiClient, MaybeAwaitable, JobInfo
-
-
-class _EvaluationData:
-    evs: float
-    stds: float
 
 
 @dataclass
@@ -43,21 +44,18 @@ class VQEIteration:
     iter: int
     cost: float
     params: np.ndarray
-    result: PrimitiveResult[PubResult]
+    estimated: PrimitiveResult[PubResult]
     best: bool = False
-
-
-class HaltReason(Enum):
-    TOLERANCE = "tolerance"
-    INTERRUPT = "interrupt"
-    MAXITER = "maxiter"
 
 
 @dataclass
 class VQEResult:
+    params: np.ndarray
     iter: int = 0
     reason: HaltReason = HaltReason.INTERRUPT
-    best: Optional[VQEIteration] = None
+    cost: Optional[float] = None
+    estimated: Optional[PrimitiveResult[PubResult]] = None
+    sampled: Optional[PrimitiveResult[SamplerPubResult]] = None
 
 
 @dataclass
@@ -75,9 +73,10 @@ class VQE:
     def run(
         self,
         estimator: Estimator,
+        sampler: Optional[Sampler] = None,
         callback: Optional[Callable[[VQEIteration], None]] = None,
     ) -> VQEResult:
-        out = VQEResult()
+        out = VQEResult(params=self.initial_params)
 
         def cost_fun(
             params: np.ndarray,
@@ -86,13 +85,15 @@ class VQE:
             bound_params = BindingsArray.coerce({tuple(self.ansatz.parameters): params})
             pub = EstimatorPub(self.ansatz, self.observables, bound_params)
             result = estimator.run([pub]).result()
-            cost = cast(_EvaluationData, result[0].data).evs
+            cost = cast(EstimatorData, result[0].data).evs
             vqe_result = VQEIteration(
-                iter=out.iter, cost=cost, params=params, result=result
+                iter=out.iter, cost=cost, params=params, estimated=result
             )
-            if out.best is None or cost < out.best.cost:
+            if out.cost is None or cost < out.cost:
                 vqe_result.best = True
-                out.best = vqe_result
+                out.params = params
+                out.cost = cost
+                out.estimated = vqe_result.estimated
             if callback is not None:
                 callback(vqe_result)
             return cost
@@ -115,14 +116,24 @@ class VQE:
         except StopIteration:
             out.reason = HaltReason.INTERRUPT
 
+        if sampler is not None:
+            bound_params = cast(
+                BindingsArrayLike,
+                BindingsArray.coerce({tuple(self.ansatz.parameters): out.params}).data,
+            )
+            measured_ansatz = cast(
+                QuantumCircuit, self.ansatz.measure_all(inplace=False)
+            )
+            out.sampled = sampler.run([(measured_ansatz, bound_params)]).result()
+
         return out
 
     def send(
-        self, api: ApiClient, estimator: EstimatorOptions = EstimatorOptions()
+        self, api: ApiClient, run_options: RunOptions = RunOptions()
     ) -> MaybeAwaitable[JobInfo]:
         return api.create_job(
             q3as.api.JobRequest(
-                input=q3as.encoding.EncodedVQE.encode(self), estimator=estimator
+                input=q3as.encoding.EncodedVQE.encode(self), run_options=run_options
             )
         )
 
@@ -227,11 +238,12 @@ class VQEBuilder:
     def run(
         self,
         estimator: Estimator,
+        sampler: Optional[Sampler] = None,
         callback: Optional[Callable[[VQEIteration], None]] = None,
     ) -> VQEResult:
-        return self.build().run(estimator, callback)
+        return self.build().run(estimator, sampler, callback)
 
     def send(
-        self, api: ApiClient, estimator: EstimatorOptions = EstimatorOptions()
+        self, api: ApiClient, estimator: RunOptions = RunOptions()
     ) -> MaybeAwaitable[JobInfo]:
         return self.build().send(api, estimator)

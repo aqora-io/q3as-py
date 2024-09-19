@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Literal, Dict, Any, List
+from typing import cast, Literal, Dict, Any, List
 from enum import Enum
 import io
 import json
@@ -7,15 +7,18 @@ import base64
 
 from pydantic import BaseModel
 from qiskit.circuit import QuantumCircuit
-from qiskit.primitives import PrimitiveResult, DataBin
+from qiskit.primitives import PrimitiveResult, DataBin, BitArray
 from qiskit.primitives.containers.observables_array import (
     ObservablesArray,
     ObservablesArrayLike,
 )
 from qiskit.primitives.containers.pub_result import PubResult
+from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 import qiskit.qpy
 
 from .numpy import EncodedArray
+
+from q3as.algo.types import EstimatorData, SamplerData
 
 
 class QuantumCircuitEncoding(Enum):
@@ -63,36 +66,79 @@ class EncodedObservables(BaseModel):
         return ObservablesArray(json.loads(self.data))
 
 
-class EncodedPubResult(BaseModel):
-    metadata: Dict[str, Any]
-    data: Dict[str, EncodedArray]
+class EncodedBitArray(BaseModel):
+    array: EncodedArray
+    num_bits: int
 
     @classmethod
-    def encode(cls, result: PubResult) -> EncodedPubResult:
-        return cls(
-            metadata=result.metadata,
-            data={k: EncodedArray.encode(v) for k, v in result.data.items()},
-        )
+    def encode(cls, array: BitArray) -> EncodedBitArray:
+        return cls(array=EncodedArray.encode(array.array), num_bits=array.num_bits)
+
+    def decode(self) -> BitArray:
+        return BitArray(array=self.array.decode(), num_bits=self.num_bits)
+
+
+class EncodedEstimatorPubResult(BaseModel):
+    metadata: Dict[str, Any]
+    evs: float
+    stds: float
+
+    @classmethod
+    def encode(cls, result: PubResult) -> EncodedEstimatorPubResult:
+        data = cast(EstimatorData, result.data)
+        return cls(metadata=result.metadata, evs=data.evs, stds=data.stds)
 
     def decode(self) -> PubResult:
         return PubResult(
-            metadata=self.metadata,
-            data=DataBin(**{k: v.decode() for k, v in self.data.items()}),
+            metadata=self.metadata, data=DataBin(evs=self.evs, stds=self.stds)
+        )
+
+
+class EncodedSamplerPubResult(BaseModel):
+    metadata: Dict[str, Any]
+    meas: EncodedBitArray
+
+    @classmethod
+    def encode(cls, result: SamplerPubResult) -> EncodedSamplerPubResult:
+        data = cast(SamplerData, result.data)
+        return cls(metadata=result.metadata, meas=EncodedBitArray.encode(data.meas))
+
+    def decode(self) -> SamplerPubResult:
+        return SamplerPubResult(
+            metadata=self.metadata, data=DataBin(meas=self.meas.decode())
         )
 
 
 class EncodedEstimatorResult(BaseModel):
     metadata: Dict[str, Any]
-    pub_results: List[EncodedPubResult]
+    pub_results: List[EncodedEstimatorPubResult]
 
     @classmethod
     def encode(cls, result: PrimitiveResult[PubResult]) -> EncodedEstimatorResult:
         return cls(
             metadata=result.metadata,
-            pub_results=[EncodedPubResult.encode(r) for r in iter(result)],
+            pub_results=[EncodedEstimatorPubResult.encode(r) for r in iter(result)],
         )
 
     def decode(self) -> PrimitiveResult[PubResult]:
+        return PrimitiveResult(
+            pub_results=[r.decode() for r in self.pub_results],
+            metadata=self.metadata,
+        )
+
+
+class EncodedSamplerResult(BaseModel):
+    metadata: Dict[str, Any]
+    pub_results: List[EncodedSamplerPubResult]
+
+    @classmethod
+    def encode(cls, result: PrimitiveResult[SamplerPubResult]) -> EncodedSamplerResult:
+        return cls(
+            metadata=result.metadata,
+            pub_results=[EncodedSamplerPubResult.encode(r) for r in iter(result)],
+        )
+
+    def decode(self) -> PrimitiveResult[SamplerPubResult]:
         return PrimitiveResult(
             pub_results=[r.decode() for r in self.pub_results],
             metadata=self.metadata,

@@ -34,10 +34,12 @@ def test_quadratic():
 
     estimator = Estimator(options={"run_options": {"default_shots": 1024}})
     result = VQE.builder().observables(op).ansatz(ansatz).run(estimator)
-    if result.best is None:
+    if result.estimated is None:
         raise ValueError("Expected a result")
     sampler = Sampler(default_shots=1024)
-    bound_params = BindingsArray.coerce({tuple(ansatz.parameters): result.best.params})
+    bound_params = BindingsArray.coerce(
+        {tuple(ansatz.parameters): result.estimated.params}
+    )
     results = sampler.run([(ansatz.measure_all(inplace=False), bound_params)]).result()
     counts = results[0].data.meas.get_counts()
     # TODO check if empty

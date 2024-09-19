@@ -8,7 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from q3as.encoding import EncodedVQE, EncodedVQEResult
-from q3as.estimator import EstimatorOptions
+from q3as.run_options import RunOptions
 
 T = TypeVar("T")
 
@@ -17,7 +17,7 @@ type MaybeAwaitable[T] = Union[T, Awaitable[T]]
 
 class JobRequest(BaseModel):
     input: EncodedVQE
-    estimator: EstimatorOptions = EstimatorOptions()
+    run_options: RunOptions = RunOptions()
 
     def send(self, client: ApiClient) -> MaybeAwaitable[JobInfo]:
         return client.create_job(self)
@@ -33,7 +33,7 @@ class JobStatus(Enum):
 class JobInfo(BaseModel):
     id: UUID
     slug: str
-    input: JobRequest
+    request: JobRequest
     status: JobStatus
     result: Optional[Union[EncodedVQEResult, str]]
     created_at: datetime.datetime
