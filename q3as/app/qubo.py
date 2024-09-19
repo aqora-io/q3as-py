@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Tuple
+from typing import Tuple, Any
 
 import numpy as np
 
@@ -21,6 +21,10 @@ class Qubo(Application[EncodedQuadraticProgram, frozenset[Tuple[str, float]]]):
 
     def encode(self) -> EncodedQuadraticProgram:
         return EncodedQuadraticProgram.encode(self.program)
+
+    @classmethod
+    def validate_encoded(cls, encoded: Any) -> EncodedQuadraticProgram:
+        return EncodedQuadraticProgram.model_validate(encoded)
 
     @classmethod
     def decode(cls, encoded: EncodedQuadraticProgram) -> Qubo:

@@ -16,14 +16,13 @@ async def test_client_with_init_params():
     ansatz = ansatz = EfficientSU2(hamiltonian.num_qubits)
     x0 = 2 * np.pi * np.random.random(ansatz.num_parameters)
     with Client(Credentials.load(".credentials.json"), url=url) as client:
-        response = (
+        _ = (
             VQE.builder()
             .ansatz(ansatz)
             .observables(hamiltonian)
             .initial_params(x0)
             .send(client)
         )
-        print(response)
 
 
 async def test_client_no_init_params():
@@ -32,5 +31,4 @@ async def test_client_no_init_params():
     )
     ansatz = ansatz = EfficientSU2(hamiltonian.num_qubits)
     with Client(Credentials.load(".credentials.json"), url=url) as client:
-        response = VQE.builder().ansatz(ansatz).observables(hamiltonian).send(client)
-        print(response)
+        _ = VQE.builder().ansatz(ansatz).observables(hamiltonian).send(client)

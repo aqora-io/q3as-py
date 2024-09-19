@@ -18,5 +18,5 @@ class EncodedApplication(BaseModel):
 
     def decode(self) -> Application:
         if self.name == "qubo":
-            return q3as.app.qubo.Qubo.decode(self.data)
+            return q3as.app.qubo.Qubo.decode_any(self.data)
         raise ValueError(f"Unknown application name: {self.name}")

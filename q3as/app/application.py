@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Literal, List, Tuple
+from typing import TypeVar, Generic, Literal, List, Tuple, Any
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -37,8 +37,17 @@ class Application(ABC, Generic[Encoded, State]):
 
     @classmethod
     @abstractmethod
+    def validate_encoded(cls, encoded: Any) -> Encoded:
+        pass
+
+    @classmethod
+    @abstractmethod
     def decode(cls, encoded: Encoded) -> Application:
         pass
+
+    @classmethod
+    def decode_any(cls, encoded: Any) -> Application:
+        return cls.decode(cls.validate_encoded(encoded))
 
     @abstractmethod
     def hamiltonian(self) -> ObservablesArrayLike:
