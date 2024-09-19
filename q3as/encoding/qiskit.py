@@ -1,8 +1,7 @@
 from __future__ import annotations
-from typing import cast, Literal, Dict, Any, List
+from typing import cast, Dict, Any, List, Union, Mapping
 from enum import Enum
 import io
-import json
 import base64
 
 from pydantic import BaseModel
@@ -50,20 +49,18 @@ class EncodedQuantumCircuit(BaseModel):
         return loaded[0]
 
 
+type EncodedObservable = Union[Mapping[str, float], List[EncodedObservable]]
+
+
 class EncodedObservables(BaseModel):
-    encoding: Literal["JSON"] = "JSON"
-    data: str
+    data: EncodedObservable
 
     @classmethod
     def encode(cls, obs: ObservablesArrayLike) -> EncodedObservables:
-        return EncodedObservables(
-            data=json.dumps(
-                ObservablesArray.coerce(obs).tolist(), separators=(",", ":")
-            )
-        )
+        return EncodedObservables(data=ObservablesArray.coerce(obs).tolist())
 
     def decode(self) -> ObservablesArray:
-        return ObservablesArray(json.loads(self.data))
+        return ObservablesArray(cast(ObservablesArrayLike, self.data))
 
 
 class EncodedBitArray(BaseModel):
