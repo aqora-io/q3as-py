@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, cast, Optional, Union, Callable
+from typing import TYPE_CHECKING, cast, Optional, Union, Callable, Any, List, Tuple
 from dataclasses import dataclass
 
 import numpy as np
@@ -28,12 +28,13 @@ from qiskit.circuit.library import (
     EfficientSU2 as EfficientSU2Ansatz,
 )
 
+from q3as.app import Application
 from q3as.optimizer import Optimizer, COBYLA
 from q3as.run_options import RunOptions
 import q3as.encoding
 import q3as.api
 
-from .types import HaltReason, EstimatorData
+from .types import HaltReason, EstimatorData, SamplerData
 
 if TYPE_CHECKING:
     from q3as.api import ApiClient, MaybeAwaitable, JobInfo
@@ -56,6 +57,7 @@ class VQEResult:
     cost: Optional[float] = None
     estimated: Optional[PrimitiveResult[PubResult]] = None
     sampled: Optional[PrimitiveResult[SamplerPubResult]] = None
+    interpreted: Optional[List[Tuple[Any, int]]] = None
 
 
 @dataclass
@@ -64,6 +66,7 @@ class VQE:
     observables: ObservablesArray
     initial_params: np.ndarray
     optimizer: Optimizer
+    app: Optional[Application]
     maxiter: Optional[int] = None
 
     @classmethod
@@ -124,7 +127,14 @@ class VQE:
             measured_ansatz = cast(
                 QuantumCircuit, self.ansatz.measure_all(inplace=False)
             )
-            out.sampled = sampler.run([(measured_ansatz, bound_params)]).result()
+            sampled = sampler.run([(measured_ansatz, bound_params)]).result()
+
+            out.sampled = sampled
+
+            if self.app is not None:
+                out.interpreted = self.app.interpreted_counts(
+                    cast(SamplerData, sampled[0].data).meas
+                )
 
         return out
 
@@ -145,49 +155,62 @@ def _observables_to_pauli(observables: ObservablesArray) -> SparsePauliOp:
 type _PostProcessCallable = Optional[Callable[[QuantumCircuit], QuantumCircuit]]
 
 
-def _postprocessed(
-    postprocess: _PostProcessCallable, ansatz: QuantumCircuit
-) -> QuantumCircuit:
-    if postprocess is not None:
-        return postprocess(ansatz)
-    return ansatz
+type AnsatzCallback = Callable[[ObservablesArray], QuantumCircuit]
 
 
-def QAOA(
-    postprocess: _PostProcessCallable = None, **kwargs
-) -> Callable[[ObservablesArray], QuantumCircuit]:
-    return lambda obs: _postprocessed(
-        postprocess, QAOAAnsatz(_observables_to_pauli(obs), **kwargs)
-    )
+class QAOA:
+    def __init__(self, postprocess: _PostProcessCallable = None, **kwargs):
+        self.postprocess = postprocess
+        self.kwargs = kwargs
+
+    def __call__(self, obs: ObservablesArray) -> QuantumCircuit:
+        ansatz = QAOAAnsatz(_observables_to_pauli(obs), **self.kwargs)
+        if self.postprocess is not None:
+            ansatz = self.postprocess(ansatz)
+        return ansatz
 
 
-def TwoLocal(
-    postprocess: _PostProcessCallable = None, **kwargs
-) -> Callable[[ObservablesArray], QuantumCircuit]:
-    return lambda obs: _postprocessed(
-        postprocess, TwoLocalAnsatz(_observables_to_pauli(obs).num_qubits, **kwargs)
-    )
+class TwoLocal:
+    def __init__(self, postprocess: _PostProcessCallable = None, **kwargs):
+        self.postprocess = postprocess
+        self.kwargs = kwargs
+
+    def __call__(self, obs: ObservablesArray) -> QuantumCircuit:
+        ansatz = TwoLocalAnsatz(_observables_to_pauli(obs).num_qubits, **self.kwargs)
+        if self.postprocess is not None:
+            ansatz = self.postprocess(ansatz)
+        return ansatz
 
 
-def EfficientSU2(
-    postprocess: _PostProcessCallable = None, **kwargs
-) -> Callable[[ObservablesArray], QuantumCircuit]:
-    return lambda obs: _postprocessed(
-        postprocess, EfficientSU2Ansatz(_observables_to_pauli(obs).num_qubits, **kwargs)
-    )
+class EfficientSU2:
+    def __init__(self, postprocess: _PostProcessCallable = None, **kwargs):
+        self.postprocess = postprocess
+        self.kwargs = kwargs
+
+    def __call__(self, obs: ObservablesArray) -> QuantumCircuit:
+        ansatz = EfficientSU2Ansatz(
+            _observables_to_pauli(obs).num_qubits, **self.kwargs
+        )
+        if self.postprocess is not None:
+            ansatz = self.postprocess(ansatz)
+        return ansatz
 
 
 class VQEBuilder:
-    _ansatz: Optional[
-        Union[QuantumCircuit, Callable[[ObservablesArray], QuantumCircuit]]
-    ] = None
+    _app: Optional[Application] = None
+    _ansatz: Optional[Union[QuantumCircuit, AnsatzCallback]] = EfficientSU2()
     _observables: Optional[ObservablesArrayLike] = None
     _initial_params: Optional[ArrayLike] = None
     _optimizer: Optimizer = COBYLA()
     _maxiter: Optional[int] = None
 
+    def app(self, app: Application):
+        self._app = app
+        return self
+
     def ansatz(
-        self, qc: Union[QuantumCircuit, Callable[[ObservablesArray], QuantumCircuit]]
+        self,
+        qc: Union[QuantumCircuit, AnsatzCallback],
     ) -> VQEBuilder:
         self._ansatz = qc
         return self
@@ -210,8 +233,13 @@ class VQEBuilder:
 
     def build(self) -> VQE:
         if self._observables is None:
-            raise ValueError("Observables are required")
-        observables = ObservablesArray.coerce(self._observables)
+            if self._app is not None:
+                observables = self._app.hamiltonian()
+            else:
+                raise ValueError("Observables are required")
+        else:
+            observables = self._observables
+        observables = ObservablesArray.coerce(observables)
 
         if self._ansatz is None:
             raise ValueError("Ansatz is required")
@@ -228,6 +256,7 @@ class VQEBuilder:
             _initial_params = np.zeros(ansatz.num_parameters)
 
         return VQE(
+            app=self._app,
             ansatz=ansatz,
             observables=observables,
             initial_params=_initial_params,

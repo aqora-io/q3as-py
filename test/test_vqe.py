@@ -103,4 +103,3 @@ def test_vqe_with_sampler():
         .run(Estimator(), Sampler())
     )
     assert res.reason == HaltReason.TOLERANCE
-    print(res.sampled[0].data)

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any, List, Tuple
 
 from pydantic import BaseModel
 
@@ -13,6 +13,7 @@ from q3as.encoding.qiskit import (
     EncodedQuantumCircuit,
 )
 
+from .app import EncodedApplication
 from .optimizer import EncodedOptimizer
 from q3as.algo.types import HaltReason
 
@@ -54,6 +55,7 @@ class EncodedVQEResult(BaseModel):
     cost: Optional[float]
     estimated: Optional[EncodedEstimatorResult]
     sampled: Optional[EncodedSamplerResult]
+    interpreted: Optional[List[Tuple[Any, int]]]
 
     @classmethod
     def encode(cls, result: VQEResult) -> EncodedVQEResult:
@@ -68,6 +70,7 @@ class EncodedVQEResult(BaseModel):
             sampled=None
             if result.sampled is None
             else EncodedSamplerResult.encode(result.sampled),
+            interpreted=result.interpreted,
         )
 
     def decode(self):
@@ -78,6 +81,7 @@ class EncodedVQEResult(BaseModel):
             reason=self.reason,
             estimated=None if self.estimated is None else self.estimated.decode(),
             sampled=None if self.sampled is None else self.sampled.decode(),
+            interpreted=self.interpreted,
         )
 
 
@@ -87,6 +91,7 @@ class EncodedVQE(BaseModel):
     initial_params: EncodedArray
     optimizer: EncodedOptimizer
     maxiter: Optional[int]
+    app: Optional[EncodedApplication]
 
     @classmethod
     def encode(cls, vqe: VQE) -> EncodedVQE:
@@ -96,6 +101,7 @@ class EncodedVQE(BaseModel):
             initial_params=EncodedArray.encode(vqe.initial_params),
             optimizer=EncodedOptimizer.encode(vqe.optimizer),
             maxiter=vqe.maxiter,
+            app=None if vqe.app is None else EncodedApplication.encode(vqe.app),
         )
 
     def decode(self) -> VQE:
@@ -105,4 +111,5 @@ class EncodedVQE(BaseModel):
             initial_params=self.initial_params.decode(),
             optimizer=self.optimizer,
             maxiter=self.maxiter,
+            app=None if self.app is None else self.app.decode(),
         )
