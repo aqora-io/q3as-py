@@ -77,17 +77,20 @@ class EncodedLinearConstraint(BaseModel):
         )
 
 
-type EncodedQuadraticExpression = Dict[Tuple[int, int], float]
+type EncodedQuadraticExpression = List[Tuple[Tuple[int, int], float]]
 
 
 def encode_quadratic_expression(exp: QuadraticExpression) -> EncodedQuadraticExpression:
-    return cast(EncodedQuadraticExpression, exp.to_dict())
+    return cast(EncodedQuadraticExpression, list(exp.to_dict().items()))
 
 
 def decode_quadratic_expression(
     exp: EncodedQuadraticExpression,
 ) -> Dict[Tuple[Union[int, str], Union[int, str]], float]:
-    return cast(Dict[Tuple[Union[int, str], Union[int, str]], float], exp)
+    return cast(
+        Dict[Tuple[Union[int, str], Union[int, str]], float],
+        {key: value for key, value in exp},
+    )
 
 
 class EncodedQuadraticConstraint(BaseModel):

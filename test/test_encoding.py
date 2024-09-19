@@ -17,6 +17,7 @@ def simple_qp():
 
 def test_encoding_quadratic():
     vqe = VQE.builder().app(Qubo(simple_qp())).build()
-    encoded = EncodedVQE.encode(vqe)
-    decoded = EncodedVQE.decode(encoded)
+    encoded = EncodedVQE.encode(vqe).model_dump_json()
+    print(encoded)
+    decoded = EncodedVQE.decode(EncodedVQE.model_validate_json(encoded))
     print(decoded.app.program.prettyprint())
