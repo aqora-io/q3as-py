@@ -67,7 +67,7 @@ class VQE:
     initial_params: np.ndarray
     optimizer: Optimizer
     app: Optional[Application]
-    maxiter: Optional[int] = None
+    maxiter: int = 1000
 
     @classmethod
     def builder(cls) -> VQEBuilder:
@@ -101,16 +101,12 @@ class VQE:
                 callback(vqe_result)
             return cost
 
-        options = {}
-        if self.maxiter is not None:
-            options["maxiter"] = self.maxiter
-
         try:
             res = minimize(
                 cost_fun,
                 self.initial_params,
                 method=self.optimizer.scipy_method,
-                options=options,
+                options={"maxiter": self.maxiter},
             )
             if res.success:
                 out.reason = HaltReason.TOLERANCE
@@ -202,7 +198,7 @@ class VQEBuilder:
     _observables: Optional[ObservablesArrayLike] = None
     _initial_params: Optional[ArrayLike] = None
     _optimizer: Optimizer = COBYLA()
-    _maxiter: Optional[int] = None
+    _maxiter: int = 1000
 
     def app(self, app: Application):
         self._app = app

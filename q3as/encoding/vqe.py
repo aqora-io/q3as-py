@@ -90,7 +90,7 @@ class EncodedVQE(BaseModel):
     observables: EncodedObservables
     initial_params: EncodedArray
     optimizer: EncodedOptimizer
-    maxiter: Optional[int]
+    maxiter: int
     app: Optional[EncodedApplication]
 
     @classmethod
