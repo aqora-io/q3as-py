@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Any, List, Tuple
+from typing import TYPE_CHECKING, Optional, Any, List, Tuple, Dict
 
 from pydantic import BaseModel
 
@@ -55,6 +55,7 @@ class EncodedVQEResult(BaseModel):
     cost: Optional[float]
     estimated: Optional[EncodedEstimatorResult]
     sampled: Optional[EncodedSamplerResult]
+    meas_counts: Optional[Dict[str, float]]
     interpreted: Optional[List[Tuple[Any, int]]]
 
     @classmethod
@@ -70,6 +71,7 @@ class EncodedVQEResult(BaseModel):
             sampled=None
             if result.sampled is None
             else EncodedSamplerResult.encode(result.sampled),
+            meas_counts=result.meas_counts,
             interpreted=result.interpreted,
         )
 
@@ -81,6 +83,7 @@ class EncodedVQEResult(BaseModel):
             reason=self.reason,
             estimated=None if self.estimated is None else self.estimated.decode(),
             sampled=None if self.sampled is None else self.sampled.decode(),
+            meas_counts=self.meas_counts,
             interpreted=self.interpreted,
         )
 

@@ -57,7 +57,7 @@ class Application(ABC, Generic[Encoded, State]):
     def interpret(self, bit_string: BitString) -> State:
         pass
 
-    def interpreted_counts(self, meas: BitArray) -> List[Tuple[State, int]]:
+    def interpreted_meas(self, meas: BitArray) -> List[Tuple[State, int]]:
         out = {}
         for state, count in meas.get_counts().items():
             interpreted = self.interpret(BitString(state))

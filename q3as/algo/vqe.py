@@ -1,5 +1,15 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, cast, Optional, Union, Callable, Any, List, Tuple
+from typing import (
+    TYPE_CHECKING,
+    cast,
+    Optional,
+    Union,
+    Callable,
+    Any,
+    List,
+    Tuple,
+    Dict,
+)
 from dataclasses import dataclass
 
 import numpy as np
@@ -57,6 +67,7 @@ class VQEResult:
     cost: Optional[float] = None
     estimated: Optional[PrimitiveResult[PubResult]] = None
     sampled: Optional[PrimitiveResult[SamplerPubResult]] = None
+    meas_counts: Optional[Dict[str, int]] = None
     interpreted: Optional[List[Tuple[Any, int]]] = None
 
 
@@ -128,9 +139,9 @@ class VQE:
             out.sampled = sampled
 
             if self.app is not None:
-                out.interpreted = self.app.interpreted_counts(
-                    cast(SamplerData, sampled[0].data).meas
-                )
+                meas = cast(SamplerData, sampled[0].data).meas
+                out.meas_counts = meas.get_counts()
+                out.interpreted = self.app.interpreted_meas(meas)
 
         return out
 
