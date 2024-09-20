@@ -138,9 +138,10 @@ class VQE:
 
             out.sampled = sampled
 
+            meas = cast(SamplerData, sampled[0].data).meas
+            out.meas_counts = meas.get_counts()
+
             if self.app is not None:
-                meas = cast(SamplerData, sampled[0].data).meas
-                out.meas_counts = meas.get_counts()
                 out.interpreted = self.app.interpreted_meas(meas)
 
         return out
