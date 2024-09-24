@@ -9,7 +9,7 @@ from qiskit.primitives.containers.observables_array import (
     ObservablesArrayLike,
 )
 
-type ApplicationName = Literal["qubo"]
+type ApplicationName = Literal["qubo", "maxcut"]
 
 
 class BitString:
@@ -37,13 +37,12 @@ class Application(ABC, Generic[Encoded, State]):
 
     @classmethod
     @abstractmethod
-    def validate_encoded(cls, encoded: Any) -> Encoded:
+    def decode(cls, encoded: Encoded) -> Application:
         pass
 
     @classmethod
-    @abstractmethod
-    def decode(cls, encoded: Encoded) -> Application:
-        pass
+    def validate_encoded(cls, encoded: Any) -> Encoded:
+        return encoded
 
     @classmethod
     def decode_any(cls, encoded: Any) -> Application:

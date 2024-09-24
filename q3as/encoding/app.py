@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from q3as.app.application import Application, ApplicationName
 
 import q3as.app.qubo
+import q3as.app.maxcut
 
 
 class EncodedApplication(BaseModel):
@@ -19,4 +20,6 @@ class EncodedApplication(BaseModel):
     def decode(self) -> Application:
         if self.name == "qubo":
             return q3as.app.qubo.Qubo.decode_any(self.data)
+        if self.name == "maxcut":
+            return q3as.app.maxcut.Maxcut.decode_any(self.data)
         raise ValueError(f"Unknown application name: {self.name}")
