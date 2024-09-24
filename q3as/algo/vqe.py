@@ -47,7 +47,8 @@ import q3as.api
 from .types import HaltReason, EstimatorData, SamplerData
 
 if TYPE_CHECKING:
-    from q3as.api import ApiClient, MaybeAwaitable, JobInfo
+    from q3as.client import Client
+    from q3as.api import Job
 
 
 @dataclass
@@ -69,6 +70,19 @@ class VQEResult:
     sampled: Optional[PrimitiveResult[SamplerPubResult]] = None
     meas_counts: Optional[Dict[str, int]] = None
     interpreted: Optional[List[Tuple[Any, int]]] = None
+
+    def most_sampled(self) -> Optional[Any]:
+        samples = None
+        if self.interpreted is not None:
+            samples = [(count, value) for value, count in self.interpreted]
+        elif self.meas_counts is not None:
+            samples = [
+                (count, bitstring) for bitstring, count in self.meas_counts.items()
+            ]
+        max_sample = max(samples, key=lambda x: x[0]) if samples is not None else None
+        if max_sample is not None:
+            return max_sample[1]
+        return None
 
 
 @dataclass
@@ -146,9 +160,7 @@ class VQE:
 
         return out
 
-    def send(
-        self, api: ApiClient, run_options: RunOptions = RunOptions()
-    ) -> MaybeAwaitable[JobInfo]:
+    def send(self, api: Client, run_options: RunOptions = RunOptions()) -> Job:
         return api.create_job(
             q3as.api.JobRequest(
                 input=q3as.encoding.EncodedVQE.encode(self), run_options=run_options
@@ -280,7 +292,5 @@ class VQEBuilder:
     ) -> VQEResult:
         return self.build().run(estimator, sampler, callback)
 
-    def send(
-        self, api: ApiClient, estimator: RunOptions = RunOptions()
-    ) -> MaybeAwaitable[JobInfo]:
+    def send(self, api: Client, estimator: RunOptions = RunOptions()) -> Job:
         return self.build().send(api, estimator)

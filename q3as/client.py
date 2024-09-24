@@ -1,11 +1,19 @@
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Optional
 import json
+import time
 from io import IOBase
 from pydantic import BaseModel
 
-from httpx import BasicAuth, URL, Headers, Request, Client as BaseClient, Response
+from httpx import (
+    BasicAuth,
+    URL,
+    Headers,
+    Request,
+    Client as BaseClient,
+    Response,
+)
 
-from q3as.api import ApiClient, JobRequest, JobInfo
+from q3as.api import JobRequest, JobInfo, JobStatus, Job
 
 
 class Credentials:
@@ -53,6 +61,18 @@ class RequestBuilder:
             "POST", "/api/v1/jobs/", content=job.model_dump_json()
         )
 
+    def get_job(self, slug: str) -> Request:
+        return self.build_request("GET", f"/api/v1/jobs/{slug}")
+
+    def pause_job(self, slug: str) -> Request:
+        return self.build_request("PUT", f"/api/v1/jobs/{slug}/pause")
+
+    def resume_job(self, slug: str) -> Request:
+        return self.build_request("PUT", f"/api/v1/jobs/{slug}/resume")
+
+    def delete_job(self, slug: str) -> Request:
+        return self.build_request("DELETE", f"/api/v1/jobs/{slug}")
+
 
 class APIError(Exception):
     def __init__(self, message: str, response: Response):
@@ -81,7 +101,7 @@ class ResponseBuilder:
 JobInput = TypeVar("JobInput")
 
 
-class Client(ApiClient):
+class Client:
     client: BaseClient
     req: RequestBuilder
     res: ResponseBuilder
@@ -100,5 +120,35 @@ class Client(ApiClient):
     def __exit__(self, *_):
         self.close()
 
-    def create_job(self, job: JobRequest) -> JobInfo:
-        return self.res.parse(JobInfo, self.client.send(self.req.create_job(job)))
+    def _send_job(self, request: Request) -> Job:
+        return Job(self, self.res.parse(JobInfo, self.client.send(request)))
+
+    def create_job(self, job: JobRequest) -> Job:
+        return self._send_job(self.req.create_job(job))
+
+    def get_job(self, slug: str) -> Job:
+        return self._send_job(self.req.get_job(slug))
+
+    def pause_job(self, slug: str) -> Job:
+        return self._send_job(self.req.pause_job(slug))
+
+    def resume_job(self, slug: str) -> Job:
+        return self._send_job(self.req.resume_job(slug))
+
+    def delete_job(self, slug: str) -> Job:
+        return self._send_job(self.req.delete_job(slug))
+
+    def wait_for_job(
+        self,
+        slug: str,
+        polling_interval: float = 1.0,
+        max_wait: Optional[float] = None,
+    ) -> Job:
+        started = time.time()
+        while True:
+            job = self.get_job(slug)
+            if job.status is not JobStatus.STARTED:
+                return job
+            if max_wait is not None and time.time() - started >= max_wait:
+                raise TimeoutError("Job did not finish in time")
+            time.sleep(polling_interval)
