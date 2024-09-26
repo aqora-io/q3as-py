@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import BaseModel
 
 
@@ -10,5 +11,6 @@ class EstimatorOptions(BaseModel):
 
 
 class RunOptions(BaseModel):
+    backend: Literal["cpu_aer"] = "cpu_aer"
     sampler: SamplerOptions = SamplerOptions()
     estimator: EstimatorOptions = EstimatorOptions()
