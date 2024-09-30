@@ -658,9 +658,9 @@ class QuadraticProgram:
             linear: The linear coefficients of the left-hand side of the constraint.
             sense: The sense of the constraint,
 
-              - ``==``, ``=``, ``E``, and ``EQ`` denote 'equal to'.
-              - ``>=``, ``>``, ``G``, and ``GE`` denote 'greater-than-or-equal-to'.
-              - ``<=``, ``<``, ``L``, and ``LE`` denote 'less-than-or-equal-to'.
+                - ``==``, ``=``, ``E``, and ``EQ`` denote 'equal to'.
+                - ``>=``, ``>``, ``G``, and ``GE`` denote 'greater-than-or-equal-to'.
+                - ``<=``, ``<``, ``L``, and ``LE`` denote 'less-than-or-equal-to'.
 
             rhs: The right-hand side of the constraint.
             name: The name of the constraint.
@@ -760,9 +760,9 @@ class QuadraticProgram:
             quadratic: The quadratic coefficients of the constraint.
             sense: The sense of the constraint,
 
-              - ``==``, ``=``, ``E``, and ``EQ`` denote 'equal to'.
-              - ``>=``, ``>``, ``G``, and ``GE`` denote 'greater-than-or-equal-to'.
-              - ``<=``, ``<``, ``L``, and ``LE`` denote 'less-than-or-equal-to'.
+                - ``==``, ``=``, ``E``, and ``EQ`` denote 'equal to'.
+                - ``>=``, ``>``, ``G``, and ``GE`` denote 'greater-than-or-equal-to'.
+                - ``<=``, ``<``, ``L``, and ``LE`` denote 'less-than-or-equal-to'.
 
             rhs: The right-hand side of the constraint.
             name: The name of the constraint.

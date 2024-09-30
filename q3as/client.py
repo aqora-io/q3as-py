@@ -102,11 +102,13 @@ JobInput = TypeVar("JobInput")
 
 
 class Client:
+    """Synchronous client for creating and managing Jobs"""
     client: BaseClient
     req: RequestBuilder
     res: ResponseBuilder
 
     def __init__(self, credentials: Credentials, *, url: str = "https://q3as.aqora.io"):
+        """Create a new client instance"""
         self.req = RequestBuilder(url)
         self.res = ResponseBuilder()
         self.client = BaseClient(auth=credentials.auth())

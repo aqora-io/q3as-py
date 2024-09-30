@@ -1,0 +1,58 @@
+site_name: "Q3AS SDK"
+repo_url: https://github.com/aqora-io/q3as-py
+
+theme:
+  name: material
+  logo: assets/icon_white.svg
+  favicon: assets/icon_color_black.svg
+  features:
+    - search.suggest
+    - search.highlight
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+nav:
+  - Getting Started: index.md
+  - Reference: reference/
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - scripts/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - mkdocstrings
+
+extra:
+  version:
+    provider: mike
+  modules:
+    - q3as
+    - q3as.algo
+    - q3as.app
+    - q3as.quadratic
