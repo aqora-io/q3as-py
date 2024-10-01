@@ -1,4 +1,5 @@
 from typing import Type, TypeVar, Optional
+from contextlib import AbstractContextManager
 import json
 import time
 from io import IOBase
@@ -17,15 +18,25 @@ from q3as.api import JobRequest, JobInfo, JobStatus, Job
 
 
 class Credentials:
+    """
+    Credentials for authenticating with the server.
+    """
+
     id: str
     secret: str
 
     def __init__(self, id: str, secret: str):
+        """
+        Create a new credentials instance.
+        """
         self.id = id
         self.secret = secret
 
     @classmethod
     def load(cls, file: str | IOBase):
+        """
+        Load credentials from a file.
+        """
         if isinstance(file, str):
             file = open(file)
         return cls(**json.load(file))
@@ -101,8 +112,9 @@ class ResponseBuilder:
 JobInput = TypeVar("JobInput")
 
 
-class Client:
+class Client(AbstractContextManager):
     """Synchronous client for creating and managing Jobs"""
+
     client: BaseClient
     req: RequestBuilder
     res: ResponseBuilder
@@ -114,6 +126,9 @@ class Client:
         self.client = BaseClient(auth=credentials.auth())
 
     def close(self):
+        """
+        Close the client
+        """
         self.client.close()
 
     def __enter__(self):
@@ -126,29 +141,47 @@ class Client:
         return Job(self, self.res.parse(JobInfo, self.client.send(request)))
 
     def create_job(self, job: JobRequest) -> Job:
+        """
+        Create a new job
+        """
         return self._send_job(self.req.create_job(job))
 
-    def get_job(self, slug: str) -> Job:
-        return self._send_job(self.req.get_job(slug))
+    def get_job(self, name: str) -> Job:
+        """
+        Get a job by its name
+        """
+        return self._send_job(self.req.get_job(name))
 
-    def pause_job(self, slug: str) -> Job:
-        return self._send_job(self.req.pause_job(slug))
+    def pause_job(self, name: str) -> Job:
+        """
+        Pause a job
+        """
+        return self._send_job(self.req.pause_job(name))
 
-    def resume_job(self, slug: str) -> Job:
-        return self._send_job(self.req.resume_job(slug))
+    def resume_job(self, name: str) -> Job:
+        """
+        Resume a job
+        """
+        return self._send_job(self.req.resume_job(name))
 
-    def delete_job(self, slug: str) -> Job:
-        return self._send_job(self.req.delete_job(slug))
+    def delete_job(self, name: str) -> Job:
+        """
+        Delete a job
+        """
+        return self._send_job(self.req.delete_job(name))
 
     def wait_for_job(
         self,
-        slug: str,
+        name: str,
         polling_interval: float = 1.0,
         max_wait: Optional[float] = None,
     ) -> Job:
+        """
+        Wait for a job to finish
+        """
         started = time.time()
         while True:
-            job = self.get_job(slug)
+            job = self.get_job(name)
             if job.status is not JobStatus.STARTED:
                 return job
             if max_wait is not None and time.time() - started >= max_wait:

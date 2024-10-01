@@ -12,6 +12,9 @@ from .application import Application, ApplicationName, BitString
 
 class Qubo(Application[EncodedQuadraticProgram, frozenset[Tuple[str, float]]]):
     def __init__(self, qp: QuadraticProgram):
+        """
+        Create a new QUBO application.
+        """
         self.program = qp
         self.converter = QuadraticProgramToQubo()
         self.converted = self.converter.convert(qp)
@@ -31,9 +34,15 @@ class Qubo(Application[EncodedQuadraticProgram, frozenset[Tuple[str, float]]]):
         return Qubo(EncodedQuadraticProgram.decode(encoded))
 
     def hamiltonian(self):
+        """
+        Return the Hamiltonian of the QUBO problem.
+        """
         return self.converted.to_ising()[0]
 
-    def interpret(self, bit_string: BitString) -> frozenset:
+    def interpret(self, bit_string: BitString) -> frozenset[Tuple[str, float]]:
+        """
+        Interpret the bit string as a solution to the QUBO problem. This will return a list of pairs of variable names and their assigned values
+        """
         values = self.converter.interpret(np.flip(bit_string.to_list()))
         return frozenset(
             [

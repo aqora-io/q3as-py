@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from q3as.optimizer import Optimizer
+from q3as.algo.optimizer import Optimizer
 
 
 class EncodedOptimizer(BaseModel, Optimizer):

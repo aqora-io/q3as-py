@@ -19,16 +19,26 @@ type EdgesInput = List[
 
 
 class MaxcutOutput(BaseModel):
+    """
+    The output of the Maxcut application
+    """
+
     s: List[InputNode]
+    "Nodes in S"
     t: List[InputNode]
+    "Nodes in T"
     edges: List[Tuple[InputNode, InputNode, float]]
+    "The list of edges that need to be cut"
 
     def __hash__(self):
         return hash(self.model_dump_json())
 
 
-class Maxcut(Application):
+class Maxcut(Application[EdgesInput, MaxcutOutput]):
     def __init__(self, edges: EdgesInput):
+        """
+        Create a new Maxcut application. This takes in a list of edges, where each edge is a tuple of two nodes and a weight. Nodes can be either strings or integers
+        """
         self.edges, self.nodes = Maxcut._normalize_edges(edges)
 
     @classmethod
@@ -73,6 +83,9 @@ class Maxcut(Application):
         return SparsePauliOp.from_list(pauli_list)
 
     def interpret(self, bit_string: BitString) -> MaxcutOutput:
+        """
+        Interpret the bit string as a solution to the Maxcut problem. This will return the nodes in S and T, as well as the edges that need to be cut
+        """
         s = set()
         t = set()
         for i, bit in enumerate(np.flip(bit_string.to_list())):

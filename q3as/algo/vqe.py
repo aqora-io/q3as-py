@@ -39,11 +39,11 @@ from qiskit.circuit.library import (
 )
 
 from q3as.app import Application
-from q3as.optimizer import Optimizer, COBYLA
 from q3as.run_options import RunOptions
 import q3as.encoding
 import q3as.api
 
+from .optimizer import Optimizer, COBYLA
 from .types import HaltReason, EstimatorData, SamplerData
 
 if TYPE_CHECKING:
@@ -53,25 +53,46 @@ if TYPE_CHECKING:
 
 @dataclass
 class VQEIteration:
+    """
+    The result of a an iteration of VQE
+    """
+
     iter: int
+    "The number of the iteration"
     cost: float
+    "The value of the cost function of the iteration"
     params: np.ndarray
+    "The parameters of the ansatz of the iteration"
     estimated: PrimitiveResult[PubResult]
+    "The result of the estimation"
     best: bool = False
+    "Whether this iteration is the best so far"
 
 
 @dataclass
 class VQEResult:
     params: np.ndarray
+    "The parameters of the best iteration"
     iter: int = 0
+    "The number of iterations"
     reason: HaltReason = HaltReason.INTERRUPT
+    "The reason why the optimization stopped"
     cost: Optional[float] = None
+    "The value of the cost function of the best iteration"
     estimated: Optional[PrimitiveResult[PubResult]] = None
+    "The result of the estimation of the best iteration"
     sampled: Optional[PrimitiveResult[SamplerPubResult]] = None
+    "The result of the sampling"
     meas_counts: Optional[Dict[str, int]] = None
+    "The bit string counts after sampling"
     interpreted: Optional[List[Tuple[Any, int]]] = None
+    "The interpreted results of the sampling as defined by the application if given"
 
     def most_sampled(self) -> Optional[Any]:
+        """
+        Get the the most sampled value from the results.
+        This is the interpreted value as defined by the application if given or otherwise the bitstring
+        """
         samples = None
         if self.interpreted is not None:
             samples = [(count, value) for value, count in self.interpreted]
@@ -87,15 +108,28 @@ class VQEResult:
 
 @dataclass
 class VQE:
+    """
+    Parameters for running VQE
+    """
+
     ansatz: QuantumCircuit
+    "The ansatz circuit"
     observables: ObservablesArray
+    "The observables to estimate. E.g. the Hamiltonian of the system"
     initial_params: np.ndarray
+    "The initial parameters of the ansatz"
     optimizer: Optimizer
+    "The optimizer to use"
     app: Optional[Application]
+    "The application to use for interpretation of results"
     maxiter: int = 1000
+    "The maximum number of iterations"
 
     @classmethod
     def builder(cls) -> VQEBuilder:
+        """
+        Create a builder for VQE
+        """
         return VQEBuilder()
 
     def run(
@@ -104,6 +138,10 @@ class VQE:
         sampler: Optional[Sampler] = None,
         callback: Optional[Callable[[VQEIteration], None]] = None,
     ) -> VQEResult:
+        """
+        Run VQE
+        """
+
         out = VQEResult(params=self.initial_params)
 
         def cost_fun(
@@ -161,6 +199,9 @@ class VQE:
         return out
 
     def send(self, api: Client, run_options: RunOptions = RunOptions()) -> Job:
+        """
+        Send the VQE job to the API
+        """
         return api.create_job(
             q3as.api.JobRequest(
                 input=q3as.encoding.EncodedVQE.encode(self), run_options=run_options
@@ -179,7 +220,14 @@ type AnsatzCallback = Callable[[ObservablesArray], QuantumCircuit]
 
 
 class QAOA:
+    """
+    A builder for the QAOA ansatz
+    """
+
     def __init__(self, postprocess: _PostProcessCallable = None, **kwargs):
+        """
+        Create a new QAOA builder. Arguments are passed to the QAOAAnsatz constructor in the Qiskit circuit library.
+        """
         self.postprocess = postprocess
         self.kwargs = kwargs
 
@@ -191,7 +239,14 @@ class QAOA:
 
 
 class TwoLocal:
+    """
+    A builder for the TwoLocal ansatz
+    """
+
     def __init__(self, postprocess: _PostProcessCallable = None, **kwargs):
+        """
+        Create a new TwoLocal builder. Arguments are passed to the TwoLocal constructor in the Qiskit circuit library.
+        """
         self.postprocess = postprocess
         self.kwargs = kwargs
 
@@ -203,7 +258,14 @@ class TwoLocal:
 
 
 class EfficientSU2:
+    """
+    A builder for the EfficientSU2 ansatz
+    """
+
     def __init__(self, postprocess: _PostProcessCallable = None, **kwargs):
+        """
+        Create a new EfficientSU2 builder. Arguments are passed to the EfficientSU2 constructor in the Qiskit circuit library.
+        """
         self.postprocess = postprocess
         self.kwargs = kwargs
 
@@ -225,6 +287,9 @@ class VQEBuilder:
     _maxiter: int = 1000
 
     def app(self, app: Application):
+        """
+        Set the `Application` to use for interpretation of results
+        """
         self._app = app
         return self
 
@@ -232,26 +297,47 @@ class VQEBuilder:
         self,
         qc: Union[QuantumCircuit, AnsatzCallback],
     ) -> VQEBuilder:
+        """
+        Set the ansatz to use for the VQE.
+        This can either be a QuantumCircuit or a callback that takes the observables as argument and returns a QuantumCircuit.
+        This defaults to the EfficientSU2 ansatz.
+        """
         self._ansatz = qc
         return self
 
     def observables(self, obs: ObservablesArrayLike) -> VQEBuilder:
+        """
+        Set the observables to estimate. E.g. the Hamiltonian of the system.
+        If no observables are given, the Hamiltonian of the application is used
+        """
         self._observables = obs
         return self
 
     def initial_params(self, params: ArrayLike) -> VQEBuilder:
+        """
+        Set the initial parameters of the ansatz. If no parameters are given, the initial parameters are set to 0.
+        """
         self._initial_params = params
         return self
 
     def optimizer(self, opt: Optimizer) -> VQEBuilder:
+        """
+        Set the optimizer to use for the VQE. This defaults to COBYLA.
+        """
         self._optimizer = opt
         return self
 
     def maxiter(self, maxiter: int) -> VQEBuilder:
+        """
+        Set the maximum number of iterations for the VQE. This defaults to 1000.
+        """
         self._maxiter = maxiter
         return self
 
     def build(self) -> VQE:
+        """
+        Build the VQE instance
+        """
         if self._observables is None:
             if self._app is not None:
                 observables = self._app.hamiltonian()
@@ -290,7 +376,13 @@ class VQEBuilder:
         sampler: Optional[Sampler] = None,
         callback: Optional[Callable[[VQEIteration], None]] = None,
     ) -> VQEResult:
+        """
+        Run the VQE
+        """
         return self.build().run(estimator, sampler, callback)
 
     def send(self, api: Client, estimator: RunOptions = RunOptions()) -> Job:
+        """
+        Send the VQE job to the API
+        """
         return self.build().send(api, estimator)

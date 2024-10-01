@@ -3,11 +3,21 @@ from pydantic import BaseModel
 
 
 class SamplerOptions(BaseModel):
+    """
+    Options for the sampler.
+    """
+
     shots: int = 1024
+    "Number of shots for the sampler."
 
 
 class EstimatorOptions(BaseModel):
+    """
+    Options for the estimator.
+    """
+
     shots: int = 1024
+    "Number of shots for the estimator."
 
 
 type BackendName = Literal[
@@ -38,6 +48,13 @@ type BackendName = Literal[
 
 
 class RunOptions(BaseModel):
+    """
+    Options for  running in the cloud.
+    """
+
     backend: BackendName = "auto"
+    "Name of the backend to use. See `q3as.run_options.BackendName` for possible values."
     sampler: SamplerOptions = SamplerOptions()
+    "Options for the sampler."
     estimator: EstimatorOptions = EstimatorOptions()
+    "Options for the estimator."

@@ -49,7 +49,7 @@ from .quadratic_objective import QuadraticObjective
 from .quadratic_program import QuadraticProgram
 from .quadratic_program_element import QuadraticProgramElement
 from .variable import Variable
-from .types import VarType
+from .types import VarType, QuadraticProgramStatus
 
 __all__ = [
     "Constraint",
@@ -62,4 +62,5 @@ __all__ = [
     "QuadraticProgramElement",
     "Variable",
     "VarType",
+    "QuadraticProgramStatus",
 ]

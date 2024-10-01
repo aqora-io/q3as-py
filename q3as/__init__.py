@@ -1,7 +1,7 @@
 from q3as.client import Client, Credentials
 from q3as.algo.vqe import VQE
 from q3as.run_options import RunOptions, EstimatorOptions, SamplerOptions
-from q3as.api import Job, JobRequest, JobStatus
+from q3as.api import Job, JobRequest, JobStatus, BaseJob
 
 __all__ = [
     "VQE",
@@ -11,6 +11,7 @@ __all__ = [
     "EstimatorOptions",
     "SamplerOptions",
     "Job",
+    "BaseJob",
     "JobRequest",
     "JobStatus",
 ]
