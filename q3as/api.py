@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 from enum import Enum
 import datetime
 from uuid import UUID
@@ -33,6 +33,21 @@ class JobRequest(BaseModel):
         return client.create_job(self)
 
 
+class JobResult(BaseModel):
+    result: Optional[EncodedVQEResult]
+    error: Optional[str]
+
+    def is_some(self):
+        return self.result is not None or self.error is not None
+
+    def as_vqe_result(self) -> Optional[VQEResult]:
+        if self.error is not None:
+            raise Exception(self.error)
+        if self.result is None:
+            return self.result
+        return self.result.decode()
+
+
 class JobStatus(Enum):
     """
     Enum representing the status of a job.
@@ -51,9 +66,7 @@ class JobStatus(Enum):
 class JobInfo(BaseModel):
     id: UUID
     slug: str
-    request: JobRequest
     status: JobStatus
-    result: Optional[Union[EncodedVQEResult, str]]
     created_at: datetime.datetime
     updated_at: Optional[datetime.datetime]
     finished_at: Optional[datetime.datetime]
@@ -65,9 +78,11 @@ class BaseJob:
     """
 
     info: JobInfo
+    request: JobRequest
 
-    def __init__(self, info: JobInfo):
+    def __init__(self, info: JobInfo, request: JobRequest):
         self.info = info
+        self.request = request
 
     @property
     def name(self) -> str:
@@ -88,14 +103,14 @@ class BaseJob:
         """
         The input VQE.
         """
-        return self.info.request.input.decode()
+        return self.request.input.decode()
 
     @property
     def run_options(self) -> RunOptions:
         """
         The run options.
         """
-        return self.info.request.run_options
+        return self.request.run_options
 
     @property
     def created_at(self) -> datetime.datetime:
@@ -118,76 +133,69 @@ class BaseJob:
         """
         return self.info.finished_at
 
-    def result_now(self) -> Optional[VQEResult]:
-        """
-        Get the result of the job without waiting for it to finish. May return None if the job is not finished, or raise an exception if the job failed.
-        """
-        if self.info.result is None:
-            return None
-        if isinstance(self.info.result, str):
-            raise Exception(self.info.result)
-        return self.info.result.decode()
-
 
 class Job(BaseJob):
     client: Client
 
-    def __init__(self, client: Client, info: JobInfo):
-        super().__init__(info)
+    def __init__(self, client: Client, info: JobInfo, request: JobRequest):
+        super().__init__(info, request)
         self.client = client
-
-    def wait(
-        self, polling_interval: float = 1.0, max_wait: Optional[float] = None
-    ) -> Job:
-        """
-        Wait for the job to finish
-        """
-        if self.status is not JobStatus.STARTED:
-            return self
-        job = self.client.wait_for_job(self.info.slug, polling_interval, max_wait)
-        self.info = job.info
-        return job
 
     def result(
         self, polling_interval: float = 1.0, max_wait: Optional[float] = None
     ) -> VQEResult:
         """
-        Get the result of the job, waiting for it to finish if necessary.
+        Wait for the job to finish and return result
+        If the job is not finished, return None. If the Job finished with an error, raise an exception.
         """
-        job = self.wait(polling_interval, max_wait)
-        result_now = job.result_now()
-        if result_now is None:
-            raise ValueError("Job did not return a result")
-        return result_now
+        if self.status is not JobStatus.STARTED:
+            vqe_result = self.result_now()
+            if vqe_result is not None:
+                return vqe_result
+        info, result = self.client._wait_for_job(
+            self.info.slug, polling_interval, max_wait
+        )
+        self.info = info
+        vqe_result = result.as_vqe_result()
+        if vqe_result is None:
+            raise ValueError("Expected result to not be None")
+        return vqe_result
+
+    def result_now(self) -> Optional[VQEResult]:
+        """
+        Get the result of the job now without waiting for it to finish.
+        If the job is not finished, return None. If the Job finished with an error, raise an exception.
+        """
+        self.client._get_job_result(self.info.slug).as_vqe_result()
 
     def refetch(self) -> Job:
         """
         Refetch the job from the server.
         """
-        job = self.client.get_job(self.info.slug)
-        self.info = job.info
-        return job
+        info = self.client._get_job_info(self.info.slug)
+        self.info = info
+        return self
 
     def pause(self) -> Job:
         """
         Pause the job.
         """
-        job = self.client.pause_job(self.info.slug)
-        self.info = job.info
-        return job
+        info = self.client._pause_job(self.info.slug)
+        self.info = info
+        return self
 
     def resume(self) -> Job:
         """
         Resume the job.
         """
-        job = self.client.resume_job(self.info.slug)
-        self.info = job.info
-        return job
+        info = self.client._resume_job(self.info.slug)
+        self.info = info
+        return self
 
     def delete(self) -> Job:
         """
         Delete the job.
         """
-        job = self.client.delete_job(self.info.slug)
-        self.info = job.info
-        return job
+        info = self.client._delete_job(self.info.slug)
+        self.info = info
+        return self

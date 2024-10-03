@@ -36,6 +36,6 @@ def test_maxcut():
     )
 
 
-def test_client_quadratic():
+def test_client_maxcut():
     with Client(Credentials.load(".credentials.json"), url=url) as client:
         _ = VQE.builder().app(simple_maxcut()).send(client)
