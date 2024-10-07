@@ -80,7 +80,7 @@ class RequestBuilder:
         return (JobRequest, self.build_request("GET", f"/api/v1/jobs/{slug}/request"))
 
     def get_job_result(self, slug: str) -> Tuple[Type[JobResult], Request]:
-        return (JobResult, self.build_request("GET", f"/api/v1/jobs/{slug}/response"))
+        return (JobResult, self.build_request("GET", f"/api/v1/jobs/{slug}/result"))
 
     def pause_job(self, slug: str) -> Tuple[Type[JobInfo], Request]:
         return (JobInfo, self.build_request("PUT", f"/api/v1/jobs/{slug}/pause"))
