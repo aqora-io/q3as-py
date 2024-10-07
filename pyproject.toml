@@ -4,7 +4,12 @@ version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["httpx>=0.27.0", "pydantic>=2.9.1", "qiskit>=1.0.0"]
+dependencies = [
+  "httpx>=0.27.0",
+  "pydantic>=2.9.1",
+  "qiskit-addon-cutting>=0.9.0",
+  "qiskit>=1.0.0",
+]
 
 [project.urls]
 Homepage = "https://q3as.aqora.io"
@@ -27,6 +32,9 @@ dev-dependencies = [
   "pytest>=8.3.2",
   "qiskit-aer>=0.14.1",
 ]
+
+[tool.uv.sources]
+qiskit-addon-cutting = { path = "../qiskit-addon-cutting", editable = true }
 
 [build-system]
 requires = ["hatchling"]

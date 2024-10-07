@@ -28,7 +28,6 @@ from qiskit.primitives.containers.observables_array import (
     ObservablesArrayLike,
 )
 from qiskit.primitives.containers.bindings_array import BindingsArray, BindingsArrayLike
-from qiskit.primitives.containers.estimator_pub import EstimatorPub
 from qiskit.primitives.containers.sampler_pub_result import SamplerPubResult
 from qiskit.primitives.containers.pub_result import PubResult
 from qiskit.quantum_info import SparsePauliOp
@@ -38,17 +37,25 @@ from qiskit.circuit.library import (
     EfficientSU2 as EfficientSU2Ansatz,
 )
 
+from q3as.algo.cutting import (
+    CutAction,
+    create_estimate_cut,
+)
 from q3as.app import Application
 from q3as.run_options import RunOptions
 import q3as.encoding
 import q3as.api
 
 from .optimizer import Optimizer, COBYLA
-from .types import HaltReason, EstimatorData, SamplerData
+from .types import HaltReason, SamplerData
 
 if TYPE_CHECKING:
     from q3as.client import Client
     from q3as.api import Job
+
+
+def _observables_to_pauli(observables: ObservablesArray) -> SparsePauliOp:
+    return SparsePauliOp.from_list(observables.ravel().tolist()[0].items())
 
 
 @dataclass
@@ -63,7 +70,7 @@ class VQEIteration:
     "The value of the cost function of the iteration"
     params: np.ndarray
     "The parameters of the ansatz of the iteration"
-    estimated: PrimitiveResult[PubResult]
+    sampled: List[PrimitiveResult[SamplerPubResult]]
     "The result of the estimation"
     best: bool = False
     "Whether this iteration is the best so far"
@@ -134,13 +141,22 @@ class VQE:
 
     def run(
         self,
-        estimator: Estimator,
-        sampler: Optional[Sampler] = None,
+        sampler: Sampler,
+        *,
+        cuts: List[CutAction] = [],
+        num_cut_samples: int | float = np.inf,
         callback: Optional[Callable[[VQEIteration], None]] = None,
     ) -> VQEResult:
         """
         Run VQE
         """
+
+        experiments = create_estimate_cut(
+            self.ansatz,
+            _observables_to_pauli(self.observables),
+            cuts,
+            num_cut_samples,
+        )
 
         out = VQEResult(params=self.initial_params)
 
@@ -148,18 +164,15 @@ class VQE:
             params: np.ndarray,
         ):
             out.iter += 1
-            bound_params = BindingsArray.coerce({tuple(self.ansatz.parameters): params})
-            pub = EstimatorPub(self.ansatz, self.observables, bound_params)
-            result = estimator.run([pub]).result()
-            cost = cast(EstimatorData, result[0].data).evs
+            cost, sampled = experiments.run(sampler, params)
             vqe_result = VQEIteration(
-                iter=out.iter, cost=cost, params=params, estimated=result
+                iter=out.iter, cost=cost, params=params, sampled=sampled
             )
             if out.cost is None or cost < out.cost:
                 vqe_result.best = True
                 out.params = params
                 out.cost = cost
-                out.estimated = vqe_result.estimated
+                out.sampled = vqe_result.sampled
             if callback is not None:
                 callback(vqe_result)
             return cost
@@ -207,10 +220,6 @@ class VQE:
                 input=q3as.encoding.EncodedVQE.encode(self), run_options=run_options
             )
         )
-
-
-def _observables_to_pauli(observables: ObservablesArray) -> SparsePauliOp:
-    return SparsePauliOp.from_list(observables.ravel().tolist()[0].items())
 
 
 type _PostProcessCallable = Optional[Callable[[QuantumCircuit], QuantumCircuit]]
