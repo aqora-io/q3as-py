@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.1.2 - 2024-10-07
+#### Bug Fixes
+- Fix response endpoint - (9d4b554) - Julian Popescu
+
+- - -
+
 ## v0.1.1 - 2024-10-03
 #### Bug Fixes
 - use lazy loaded request and result - (4bc8576) - Julian Popescu
