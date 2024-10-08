@@ -1459,59 +1459,105 @@
 <p>To run your algorithms in the cloud, you have to create an API key and load it into your <code>Credentials</code></p>
 <p>Start by visiting <a href="https://q3as.aqora.io">https://q3as.aqora.io</a> and signing in with your GitHub or Google account. Click on your profile in the top right and go to <strong>API Keys</strong>. Tap <strong>Add API Key</strong> and enter a description for your API key. Tap <strong>Copy JSON to clipboard</strong> and paste the result in a file on your computer.</p>
 <h2 id="basic-usage">Basic Usage</h2>
-<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-1-10">10</a></span>
-<span class="normal"><a href="#__codelineno-1-11">11</a></span>
-<span class="normal"><a href="#__codelineno-1-12">12</a></span>
-<span class="normal"><a href="#__codelineno-1-13">13</a></span>
-<span class="normal"><a href="#__codelineno-1-14">14</a></span>
-<span class="normal"><a href="#__codelineno-1-15">15</a></span>
-<span class="normal"><a href="#__codelineno-1-16">16</a></span>
-<span class="normal"><a href="#__codelineno-1-17">17</a></span>
-<span class="normal"><a href="#__codelineno-1-18">18</a></span>
-<span class="normal"><a href="#__codelineno-1-19">19</a></span>
-<span class="normal"><a href="#__codelineno-1-20">20</a></span>
-<span class="normal"><a href="#__codelineno-1-21">21</a></span>
-<span class="normal"><a href="#__codelineno-1-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">q3as</span> <span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">Credentials</span><span class="p">,</span> <span class="n">VQE</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">q3as.app</span> <span class="kn">import</span> <span class="n">Maxcut</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">credentials</span> <span class="o">=</span> <span class="n">Credentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;path/to/credentials.json&quot;</span><span class="p">)</span><span class="c1"># (1)!</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="n">graph</span> <span class="o">=</span> <span class="p">[</span><span class="c1"># (2)!</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8"></a>    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9"></a>    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10"></a>    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11"></a>    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12"></a>    <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13"></a>    <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14"></a><span class="p">]</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15"></a>
-<a id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="n">app</span> <span class="o">=</span> <span class="n">Maxcut</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="c1"># (3)!</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17"></a>
-<a id="__codelineno-1-18" name="__codelineno-1-18"></a><span class="n">job</span> <span class="o">=</span> <span class="n">VQE</span><span class="o">.</span><span class="n">builder</span><span class="p">()</span><span class="o">.</span><span class="n">app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">client</span><span class="p">)</span><span class="c1"># (4)!</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19"></a>
-<a id="__codelineno-1-20" name="__codelineno-1-20"></a><span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="c1"># (5)!</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21"></a>
-<a id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">result</span><span class="p">())</span><span class="c1"># (6)!</span>
+<p>Once you've created an API Key and installed the SDK you're ready to create your first quantum job! We're going to first create our client so we can jobs to Q3AS. To do that just load the credentials you've saved in the previous step.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span>
+<span class="normal"><a href="#__codelineno-1-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">q3as</span> <span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">Credentials</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="n">credentials</span> <span class="o">=</span> <span class="n">Credentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;path/to/credentials.json&quot;</span><span class="p">)</span><span class="c1"># (1)!</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <ol>
 <li>This path should match the path where you saved your API key JSON file.</li>
-<li>We define a graph as a list of edges and their weights</li>
-<li>Maximum cut is an NP hard problem used in optimization algorithms. You can learn more at <a href="https://en.wikipedia.org/wiki/Maximum_cut">https://en.wikipedia.org/wiki/Maximum_cut</a></li>
-<li>We will use a Variational Quantum Eigensolver to solve the maximum cut problem we have defined, and send it to the Q3AS to run. You can learn more about VQE at <a href="https://en.wikipedia.org/wiki/Variational_quantum_eigensolver">https://en.wikipedia.org/wiki/Variational_quantum_eigensolver</a></li>
-<li>Get the name of the Job. This can be used to find it on the platform and retrieve the Job results later</li>
-<li>Get the result of the Job. This will block until the Job is finished.</li>
 </ol>
-<p>Visit <a href="https://q3as.aqora.io">https://q3as.aqora.io</a> to see your Job running in the cloud, and visualize the results</p>
+<p>From here we can start building out the definition of the problem that we would like to solve. We'll start with an NP Hard problem called <a href="https://en.wikipedia.org/wiki/Maximum_cut">Maximum Weighted Cut</a>. We can define a graph we would like to cut by supplying a list of edges and their weights.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span>
+<span class="normal"><a href="#__codelineno-2-6">6</a></span>
+<span class="normal"><a href="#__codelineno-2-7">7</a></span>
+<span class="normal"><a href="#__codelineno-2-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">graph</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a>    <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>    <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+<p>We can then give this graph to our "Application" which will define what we want to do with it and how to translate it into the quantum world and back. Q3AS defines multiple such problem domains that you can use.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">q3as.app</span> <span class="kn">import</span> <span class="n">Maxcut</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="n">app</span> <span class="o">=</span> <span class="n">Maxcut</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>We now need to define a solver for our problem. We will use a <a href="https://en.wikipedia.org/wiki/Variational_quantum_eigensolver">Variational Quantum Eigensolver</a> or VQE for short</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">q3as</span> <span class="kn">import</span> <span class="n">VQE</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="n">vqe</span> <span class="o">=</span> <span class="n">VQE</span><span class="o">.</span><span class="n">builder</span><span class="p">()</span><span class="o">.</span><span class="n">app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Now we can send the job to the Q3AS, and let the server handle the computation and the visualization of the intermediate results</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span>
+<span class="normal"><a href="#__codelineno-5-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="n">job</span> <span class="o">=</span> <span class="n">vqe</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="c1"># get the name of the job</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="c1"># wait for and retrieve the results of the job</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">result</span><span class="p">())</span>
+</code></pre></div></td></tr></table></div>
+<p>Putting it all together we have!</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-6-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-6-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-6-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-6-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-6-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-6-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-6-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-6-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-6-10">10</a></span>
+<span class="normal"><a href="#__codelineno-6-11">11</a></span>
+<span class="normal"><a href="#__codelineno-6-12">12</a></span>
+<span class="normal"><a href="#__codelineno-6-13">13</a></span>
+<span class="normal"><a href="#__codelineno-6-14">14</a></span>
+<span class="normal"><a href="#__codelineno-6-15">15</a></span>
+<span class="normal"><a href="#__codelineno-6-16">16</a></span>
+<span class="normal"><a href="#__codelineno-6-17">17</a></span>
+<span class="normal"><a href="#__codelineno-6-18">18</a></span>
+<span class="normal"><a href="#__codelineno-6-19">19</a></span>
+<span class="normal"><a href="#__codelineno-6-20">20</a></span>
+<span class="normal"><a href="#__codelineno-6-21">21</a></span>
+<span class="normal"><a href="#__codelineno-6-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span> <span class="nn">q3as</span> <span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">Credentials</span><span class="p">,</span> <span class="n">VQE</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="kn">from</span> <span class="nn">q3as.app</span> <span class="kn">import</span> <span class="n">Maxcut</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">Credentials</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;credentials.json&quot;</span><span class="p">))</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="n">job</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a>    <span class="n">VQE</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a>        <span class="o">.</span><span class="n">builder</span><span class="p">()</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a>        <span class="o">.</span><span class="n">app</span><span class="p">(</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10"></a>            <span class="n">Maxcut</span><span class="p">([</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11"></a>                <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12"></a>                <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13"></a>                <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14"></a>                <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15"></a>                <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16"></a>                <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17"></a>            <span class="p">])</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18"></a>        <span class="p">)</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19"></a>        <span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20"></a><span class="p">)</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21"></a><span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22"></a><span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">result</span><span class="p">())</span>
+</code></pre></div></td></tr></table></div>
 
 
 
