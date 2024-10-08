@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.1.3 - 2024-10-08
+#### Bug Fixes
+- Reduce required python version - (01547ac) - Julian Popescu
+#### Documentation
+- Add more information to the Getting Started section - (25d0cf4) - Julian Popescu
+
+- - -
+
 ## v0.1.2 - 2024-10-07
 #### Bug Fixes
 - Fix response endpoint - (9d4b554) - Julian Popescu
