@@ -3,7 +3,7 @@ name = "q3as"
 version = "0.1.2"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.8"
 dependencies = ["httpx>=0.27.0", "pydantic>=2.9.1", "qiskit>=1.0.0"]
 
 [project.urls]
