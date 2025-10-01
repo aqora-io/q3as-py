@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.1.4 - 2025-10-01
+#### Bug Fixes
+- add qiskit version limit - (b723e77) - Julian Popescu
+
+- - -
+
 ## v0.1.3 - 2024-10-08
 #### Bug Fixes
 - Reduce required python version - (01547ac) - Julian Popescu
